@@ -598,7 +598,7 @@ function showFallback(msg){
     const sub = ciGet(kv,"Sub-Title") || "";
 
     if(hero) document.getElementById("hero").style.backgroundImage = `url("${hero}")`;
-    document.getElementById("title").textContent = title + ":";
+    document.getElementById("title").textContent = title + "!";
     document.getElementById("subtitle").textContent = sub;
 
     const sections = buildSectionsAndEntries(rows);
