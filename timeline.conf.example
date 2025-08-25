@@ -1,0 +1,21 @@
+# timeline.conf.example
+# Timeline-from-Google-Sheets (timeline.html) loads data from a Google Sheet and renders a web timeline.
+# The sample Sheet has two tabs: Source and Export.
+# An Apps Script mirrors edits from Source → Export and converts rich text to HTML
+# (bold, italics, links, and blockquotes using lines that start with '>').
+#
+# IMPORTANT:
+# - Do NOT commit your private timeline.conf (it's ignored by .gitignore).
+# - Each tab has its own numeric gid (gid=<number>). It varies per sheet.
+
+# VIEW_URL
+# - Paste the URL of the Export tab here (ends with edit?gid=<number>).
+# - Share the sheet so “Anyone with the link” can “View”.
+# - The web page fetches CSV from this tab.
+VIEW_URL=https://docs.google.com/spreadsheets/d/.../edit?gid=<export-gid>
+
+# EDITOR_URL
+# - Paste the URL of the Source tab here (ends with edit?gid=<number>).
+# - Usually restricted to trusted collaborators with edit access.
+# - Shown in the site footer as “Editor Login”.
+EDITOR_URL=https://docs.google.com/spreadsheets/d/.../edit?gid=<source-gid>
