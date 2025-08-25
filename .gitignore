@@ -1,0 +1,7 @@
+# local config
+timeline.conf
+
+# local web content not tracked by Git
+index.html
+old/
+images/
