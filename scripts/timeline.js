@@ -67,50 +67,11 @@ return base||fallback;
 }
 
 /* ===== Markdown + HTML (links, bold/italic, blockquotes, newlines) ===== */
-function escapeHTML(s){
-  return (s||"").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-}
-
-function renderMarkdown(text){
-  if(!text) return "";
-
-  // Replace explicit Markdown links with tokens so embedded HTML survives
-  const linkTokens=[]; let linkIdx=0;
-  let tmp = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(m,label,url)=>{
-    const token=`__MDLINK_${linkIdx++}__`;
-    linkTokens.push({token, html:`<a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHTML(label)}</a>`});
-    return token;
-  });
-
-  // Auto-link bare URLs and process basic Markdown for bold/italic.
-  tmp = tmp
-    .replace(/(https?:\/\/[^\s<)]+)([)\s.,;!?]*)/g,(m,url,trail)=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`)
-    .replace(/(^|[\s(])((?:www\.)[^\s<)]+)([)\s.,;!?]*)/g,(m,pre,url,trail)=>`${pre}<a href="https://${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`)
-    .replace(/(\*\*\*)([\s\S]+?)\1/g, '<strong><em>$2</em></strong>')
-    .replace(/(\*\*)([\s\S]+?)\1/g, '<strong>$2</strong>')
-    .replace(/(\*)([\s\S]+?)\1/g, '<em>$2</em>');
-
-  // Group blockquotes; recognise lines starting with '>'
-  {
-    const lines = tmp.split('\n'); const out = []; let buf = [];
-    const flush = () => { if (buf.length) { out.push('<blockquote>'+buf.join('<br>')+'</blockquote>'); buf=[]; } };
-    for (const raw of lines) {
-      const t = raw.trimStart();
-      if (t.startsWith('>')) buf.push(t.replace(/^>\s?/, '')); else { flush(); out.push(raw); }
-    }
-    flush(); tmp = out.join('\n');
-  }
-
-  tmp = tmp.replace(/\n/g,'<br>');
-  for(const L of linkTokens) tmp = tmp.replaceAll(L.token, L.html);
-  return tmp;
-}
-
-function stripHtml(html){
-const div = document.createElement("div");
-div.innerHTML = html;
-return (div.textContent || "").trim();
-}
+// Ensure DOMPurify keeps formatting tags and link attributes used by renderMarkdown
+const PURIFY_CFG = {
+  ALLOWED_TAGS: ['a', 'em', 'strong', 'blockquote', 'br'],
+  ADD_ATTR: ['target', 'rel']
+};
 
 /* ===== Build sections + entries ===== */
 function buildSectionsAndEntries(rows){
@@ -269,7 +230,7 @@ sections.forEach(sec=>{
   if(sec.img){
     const img=document.createElement("img");
     img.className="section-image"; img.src=sec.img;
-    const altText = stripHtml(DOMPurify.sanitize(renderMarkdown((sec.cap || "").trim()))) || sec.title;
+      const altText = stripHtml(DOMPurify.sanitize(renderMarkdown((sec.cap || "").trim()), PURIFY_CFG)) || sec.title;
     img.alt = altText;
     img.tabIndex = 0;
     img.addEventListener('click', ()=>openLightbox(img.src, img.alt));
@@ -277,10 +238,10 @@ sections.forEach(sec=>{
     img.addEventListener('load', rebuildAnchorTargets);
     block.appendChild(img);
   }
-  const cap=document.createElement("div"); cap.className="section-caption";
-  cap.innerHTML = DOMPurify.sanitize(renderMarkdown((sec.cap || "").trim())); block.appendChild(cap);
-  const desc=document.createElement("div"); desc.className="section-description";
-  desc.innerHTML = DOMPurify.sanitize(renderMarkdown((sec.desc || "").trim())); block.appendChild(desc);
+    const cap=document.createElement("div"); cap.className="section-caption";
+    cap.innerHTML = DOMPurify.sanitize(renderMarkdown((sec.cap || "").trim()), PURIFY_CFG); block.appendChild(cap);
+    const desc=document.createElement("div"); desc.className="section-description";
+    desc.innerHTML = DOMPurify.sanitize(renderMarkdown((sec.desc || "").trim()), PURIFY_CFG); block.appendChild(desc);
 
   wrapper.appendChild(block);
 
@@ -317,7 +278,7 @@ sections.forEach(sec=>{
       if(e.img){
         const im = document.createElement("img");
         im.className="entry-image"; im.src=e.img;
-        const altText = stripHtml(DOMPurify.sanitize(renderMarkdown((e.cap || "").trim()))) || `Entry ${idx+1}`;
+          const altText = stripHtml(DOMPurify.sanitize(renderMarkdown((e.cap || "").trim()), PURIFY_CFG)) || `Entry ${idx+1}`;
         im.alt = altText;
         im.tabIndex = 0;
         im.addEventListener('click', ()=>openLightbox(im.src, im.alt));
@@ -325,11 +286,11 @@ sections.forEach(sec=>{
         im.addEventListener('load', ()=>layoutTimeline(tl));
         card.appendChild(im);
       }
-      const c = document.createElement("div"); c.className="entry-caption";
-      c.innerHTML = DOMPurify.sanitize(renderMarkdown((e.cap||"").trim())); card.appendChild(c);
+        const c = document.createElement("div"); c.className="entry-caption";
+        c.innerHTML = DOMPurify.sanitize(renderMarkdown((e.cap||"").trim()), PURIFY_CFG); card.appendChild(c);
 
-      const d = document.createElement("div"); d.className="entry-description";
-      d.innerHTML = DOMPurify.sanitize(renderMarkdown((e.desc||"").trim()));
+        const d = document.createElement("div"); d.className="entry-description";
+        d.innerHTML = DOMPurify.sanitize(renderMarkdown((e.desc||"").trim()), PURIFY_CFG);
       card.appendChild(d);
 
       wrap.appendChild(card);
@@ -456,3 +417,4 @@ if(fileInput){
   });
  }
 })();
+
