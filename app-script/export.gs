@@ -17,7 +17,7 @@ function onEdit(e) {
     if (!sh || sh.getName() !== SOURCE_SHEET) return;
     if (e.range.getColumn() > 2) return;
     Utilities.sleep(150);
-    syncExport({ silent: true });
+    syncExport({ silent: true, row: e.range.getRow() });
   } catch (err) {
     Logger.log('onEdit error: ' + err);
   }
@@ -48,6 +48,17 @@ function richTextToMarkdown(rich) {
 
 function syncExport(opts) {
   const { src, exp } = ensureSheets();
+  const row = opts && opts.row;
+  if (row) {
+    const rich = src.getRange(row, 1, 1, 2).getRichTextValues()[0];
+    const data = [richTextToMarkdown(rich[0]), richTextToMarkdown(rich[1])];
+    exp.getRange(1, 1, 1, 2).setValues([HEADER]);
+    exp.getRange(row, 1, 1, 2).setValues(row === 1 ? [HEADER] : [data]);
+    exp.getRange('D1').setValue('Last sync: ' + new Date().toLocaleString());
+    SpreadsheetApp.flush();
+    if (!(opts && opts.silent)) toast('Synced 1 row Source → Export');
+    return;
+  }
   const richRows = src.getDataRange().getRichTextValues();
   if (!richRows.length) {
     if (!(opts && opts.silent)) toast('No data in "Source".');
