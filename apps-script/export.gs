@@ -15,7 +15,7 @@ function onEdit(e) {
     if (!e || !e.range) return;
     const sh = e.range.getSheet();
     if (!sh || sh.getName() !== SOURCE_SHEET) return;
-    if (e.range.getColumn() > 2) return;
+    if (e.range.getColumn() > 2 || e.range.getLastColumn() > 2) return;
     Utilities.sleep(150);
     syncExport({ row: e.range.getRow(), count: e.range.getNumRows(), silent: true });
   } catch (err) {
