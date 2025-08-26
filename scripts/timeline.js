@@ -50,24 +50,7 @@ window.addEventListener("keydown", e=>{ if(e.key==="Escape") closeMenu(); });
 setMenuTabIndices(true);
 
 /* ===== CSV ===== */
-function parseCSV(text){
-const rows=[]; let field="", row=[], inQ=false;
-for(let i=0;i<text.length;i++){
-  const c=text[i];
-  if(inQ){
-    if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; }
-    else field+=c;
-  } else {
-    if(c==='"') inQ=true;
-    else if(c===','){ row.push(field); field=""; }
-    else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=""; }
-    else if(c!=='\r'){ field+=c; }
-  }
-}
-row.push(field);
-if(row.length>1 || row[0]!=="") rows.push(row);
-return rows;
-}
+/* parseCSV is defined in parseCSV.js */
 function kvFromTwoColumn(rows){
 const kv={};
 for(const r of rows){ const k=(r[0]||"").trim(); const v=(r[1]||"").trim(); if(k) kv[k]=v; }
