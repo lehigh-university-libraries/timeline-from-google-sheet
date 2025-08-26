@@ -50,25 +50,31 @@ function syncExport(opts) {
   const row = opts && opts.row;
   const { src, exp } = ensureSheets();
 
+  // Single-row update (onEdit)
   if (row) {
+    if (row === 1) return; // skip header row
     const rich = src.getRange(row, 1, 1, 2).getRichTextValues()[0];
     const values = [richTextToMarkdown(rich[0]), richTextToMarkdown(rich[1])];
-    exp.getRange(row + 1, 1, 1, 2).setValues([values]);
+    exp.getRange(row, 1, 1, 2).setValues([values]);
     exp.getRange('D1').setValue('Last sync: ' + new Date().toLocaleString());
     SpreadsheetApp.flush();
     if (!(opts && opts.silent)) toast('Synced 1 row Source → Export');
     return;
   }
 
-  const richRows = src.getRange(1, 1, src.getLastRow(), 2).getRichTextValues();
-  if (!richRows.length) {
+  const last = src.getLastRow();
+  exp.clearContents();
+  exp.getRange(1, 1, 1, 2).setValues([HEADER]);
+
+  if (last <= 1) {
+    exp.getRange('D1').setValue('Last sync: ' + new Date().toLocaleString());
+    SpreadsheetApp.flush();
     if (!(opts && opts.silent)) toast('No data in "Source".');
     return;
   }
-  const data = richRows.map(r => [richTextToMarkdown(r[0]), richTextToMarkdown(r[1])]);
 
-  exp.clearContents();
-  exp.getRange(1, 1, 1, 2).setValues([HEADER]);
+  const richRows = src.getRange(2, 1, last - 1, 2).getRichTextValues();
+  const data = richRows.map(r => [richTextToMarkdown(r[0]), richTextToMarkdown(r[1])]);
   if (data.length) exp.getRange(2, 1, data.length, 2).setValues(data);
   exp.getRange('D1').setValue('Last sync: ' + new Date().toLocaleString());
   SpreadsheetApp.flush();

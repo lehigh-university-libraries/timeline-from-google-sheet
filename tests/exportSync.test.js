@@ -28,6 +28,7 @@ class Sheet {
   }
   getName() { return this.name; }
   getDataRange() { return { getRichTextValues: () => this.data }; }
+  getLastRow() { return this.data.length; }
   getRange(a, b, c, d) {
     if (typeof a === 'string') {
       if (a === 'D1') return { setValue: v => { this.meta.D1 = v; } };
@@ -77,7 +78,7 @@ function createEnv(srcData) {
   const SpreadsheetApp = { getActive: () => ss, flush: () => {} };
   const sandbox = { SpreadsheetApp, Logger: { log: () => {} }, Utilities: { sleep: () => {} } };
   vm.createContext(sandbox);
-  const code = fs.readFileSync(path.join(__dirname, '../app-script/export.gs'), 'utf8');
+  const code = fs.readFileSync(path.join(__dirname, '../apps-script/export.gs'), 'utf8');
   vm.runInContext(code, sandbox);
   return { sandbox, src, exp };
 }
