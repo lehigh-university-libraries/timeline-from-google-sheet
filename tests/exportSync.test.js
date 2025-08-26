@@ -28,6 +28,7 @@ class Sheet {
   }
   getName() { return this.name; }
   getDataRange() { return { getRichTextValues: () => this.data }; }
+  getLastRow() { return this.data.length; }
   getRange(a, b, c, d) {
     if (typeof a === 'string') {
       if (a === 'D1') return { setValue: v => { this.meta.D1 = v; } };
@@ -77,7 +78,7 @@ function createEnv(srcData) {
   const SpreadsheetApp = { getActive: () => ss, flush: () => {} };
   const sandbox = { SpreadsheetApp, Logger: { log: () => {} }, Utilities: { sleep: () => {} } };
   vm.createContext(sandbox);
-  const code = fs.readFileSync(path.join(__dirname, '../app-script/export.gs'), 'utf8');
+  const code = fs.readFileSync(path.join(__dirname, '../apps-script/export.gs'), 'utf8');
   vm.runInContext(code, sandbox);
   return { sandbox, src, exp };
 }
@@ -110,6 +111,26 @@ test('syncExport updates single row', () => {
   assert.deepStrictEqual(exp.data, [
     ['Type', 'Value'],
     ['[Link](https://x.test)', '***BI***'],
+  ]);
+});
+
+test('syncExport normalizes first section rows', () => {
+  const sourceData = [
+    [makeRichText('Type'), makeRichText('Value')],
+    [makeRichText('Section Heading'), makeRichText('Head')],
+    [makeRichText('Section Description'), makeRichText('Plain')],
+    [makeRichText('Section Image'), makeRichText('img')],
+    [makeRichText('Section Caption'), makeRichText('cap')],
+    [makeRichText('Section Description'), makeRichText('MD', { bold: true })],
+  ];
+  const { sandbox, exp } = createEnv(sourceData);
+  sandbox.syncExport({ silent: true });
+  assert.deepStrictEqual(exp.data, [
+    ['Type', 'Value'],
+    ['Section Heading', 'Head'],
+    ['Section Image', 'img'],
+    ['Section Caption', 'cap'],
+    ['Section Description', '**MD**'],
   ]);
 });
 
