@@ -285,9 +285,9 @@ sections.forEach(sec=>{
     block.appendChild(img);
   }
   const cap=document.createElement("div"); cap.className="section-caption";
-  cap.innerHTML = renderMarkdown((sec.cap || "").trim()); block.appendChild(cap);
+  cap.innerHTML = DOMPurify.sanitize(renderMarkdown((sec.cap || "").trim())); block.appendChild(cap);
   const desc=document.createElement("div"); desc.className="section-description";
-  desc.innerHTML = renderMarkdown((sec.desc || "").trim()); block.appendChild(desc);
+  desc.innerHTML = DOMPurify.sanitize(renderMarkdown((sec.desc || "").trim())); block.appendChild(desc);
 
   wrapper.appendChild(block);
 
@@ -333,10 +333,10 @@ sections.forEach(sec=>{
         card.appendChild(im);
       }
       const c = document.createElement("div"); c.className="entry-caption";
-      c.innerHTML = renderMarkdown((e.cap||"").trim()); card.appendChild(c);
+      c.innerHTML = DOMPurify.sanitize(renderMarkdown((e.cap||"").trim())); card.appendChild(c);
 
       const d = document.createElement("div"); d.className="entry-description";
-      d.innerHTML = renderMarkdown((e.desc||"").trim());
+      d.innerHTML = DOMPurify.sanitize(renderMarkdown((e.desc||"").trim()));
       card.appendChild(d);
 
       wrap.appendChild(card);
