@@ -20,6 +20,25 @@
   body { margin:0; background: var(--bg); color: var(--fg); font:20px/1.6 ui-sans-serif,system-ui; }
   body.modal-open { overflow:hidden; }
 
+  .skip-link {
+    position: absolute;
+    left: -999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .skip-link:focus {
+    left: 8px;
+    top: 8px;
+    width: auto;
+    height: auto;
+    padding: 8px 12px;
+    background: #000;
+    color: #fff;
+    z-index: 10000;
+  }
+
   /* HERO */
   .hero { position: relative; width:100%; height:var(--hero-h); background:#ddd center/cover no-repeat; background-position: center 30%; display:grid; place-items:end start; border-bottom: 2px solid #000; }
   .hero::before { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0.08) 0%,rgba(0,0,0,0.40) 55%,rgba(0,0,0,0.60) 100%); }
@@ -136,6 +155,7 @@
 </head>
 <body>
 
+<a href="#sections" class="skip-link">Skip to main content</a>
 <a id="top"></a>
 <section id="hero" class="hero">
   <div class="hero-inner">
@@ -145,8 +165,8 @@
 </section>
 
 <!-- Left hamburger -->
-<button id="hamburger" class="hamburger" aria-label="Open menu" aria-expanded="false">
-  <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+<button id="hamburger" class="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+  <span class="bar" aria-hidden="true"></span><span class="bar" aria-hidden="true"></span><span class="bar" aria-hidden="true"></span>
 </button>
 <nav id="menu" class="menu-panel" aria-label="Section navigation" aria-hidden="true">
   <ul id="menuList" class="menu-list"></ul>
@@ -166,7 +186,7 @@
   <div id="fallbackNote" style="font-size:14px;color:#555"></div>
 </div>
 
-<div id="sections" class="sections"></div>
+<main id="sections" class="sections"></main>
 
 <!-- Lightbox -->
 <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
@@ -236,11 +256,20 @@ function csvUrlFromView(viewUrl){
 /* ===== Hamburger ===== */
 const hamburger = document.getElementById("hamburger");
 const menu      = document.getElementById("menu");
-function openMenu(){ menu.classList.add("open"); hamburger.setAttribute("aria-expanded","true"); menu.setAttribute("aria-hidden","false"); }
-function closeMenu(){ menu.classList.remove("open"); hamburger.setAttribute("aria-expanded","false"); menu.setAttribute("aria-hidden","true"); }
+
+function setMenuTabIndices(disabled){
+  menu.querySelectorAll('a').forEach(a=>{
+    if(disabled) a.setAttribute('tabindex','-1');
+    else a.removeAttribute('tabindex');
+  });
+}
+
+function openMenu(){ menu.classList.add("open"); hamburger.setAttribute("aria-expanded","true"); menu.setAttribute("aria-hidden","false"); setMenuTabIndices(false); }
+function closeMenu(){ menu.classList.remove("open"); hamburger.setAttribute("aria-expanded","false"); menu.setAttribute("aria-hidden","true"); setMenuTabIndices(true); }
 hamburger.addEventListener("click", e=>{ e.stopPropagation(); menu.classList.contains("open") ? closeMenu() : openMenu(); });
 document.addEventListener("click", e=>{ if(!menu.contains(e.target) && !hamburger.contains(e.target)) closeMenu(); });
 window.addEventListener("keydown", e=>{ if(e.key==="Escape") closeMenu(); });
+setMenuTabIndices(true);
 
 /* ===== CSV ===== */
 function parseCSV(text){
@@ -445,12 +474,13 @@ function renderMenu(sections){
     if (idx === sections.length - 1) a.classList.add("branch-last"); else a.classList.add("branch");
     li.appendChild(a); ul.appendChild(li);
   });
+  setMenuTabIndices(true);
 }
 
 function renderSections(sections){
   const container=document.getElementById("sections"); container.innerHTML="";
   sections.forEach(sec=>{
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement("section");
     wrapper.className = "section";
 
     const h2=document.createElement("h2");
@@ -462,7 +492,9 @@ function renderSections(sections){
     if(sec.img){
       const img=document.createElement("img");
       img.className="section-image"; img.src=sec.img; img.alt=sec.title;
+      img.tabIndex = 0;
       img.addEventListener('click', ()=>openLightbox(img.src, img.alt));
+      img.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' ') openLightbox(img.src, img.alt); });
       img.addEventListener('load', rebuildAnchorTargets);
       block.appendChild(img);
     }
@@ -506,7 +538,9 @@ function renderSections(sections){
         if(e.img){
           const im = document.createElement("img");
           im.className="entry-image"; im.src=e.img; im.alt=(e.caption || `Entry ${idx+1}`);
+          im.tabIndex = 0;
           im.addEventListener('click', ()=>openLightbox(im.src, im.alt));
+          im.addEventListener('keydown', ev=>{ if(ev.key==='Enter' || ev.key===' ') openLightbox(im.src, im.alt); });
           im.addEventListener('load', ()=>layoutTimeline(tl));
           card.appendChild(im);
         }
