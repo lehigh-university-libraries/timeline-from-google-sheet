@@ -335,6 +335,12 @@ function renderMarkdown(text){
   return tmp;
 }
 
+function stripHtml(html){
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return (div.textContent || "").trim();
+}
+
 /* ===== Build sections + entries ===== */
 function buildSectionsAndEntries(rows){
   const sections=[];
@@ -491,7 +497,9 @@ function renderSections(sections){
     const block=document.createElement("div"); block.className="section-block";
     if(sec.img){
       const img=document.createElement("img");
-      img.className="section-image"; img.src=sec.img; img.alt=sec.title;
+      img.className="section-image"; img.src=sec.img;
+      const altText = stripHtml(renderMarkdown((sec.cap || "").trim())) || sec.title;
+      img.alt = altText;
       img.tabIndex = 0;
       img.addEventListener('click', ()=>openLightbox(img.src, img.alt));
       img.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' ') openLightbox(img.src, img.alt); });
@@ -537,7 +545,9 @@ function renderSections(sections){
 
         if(e.img){
           const im = document.createElement("img");
-          im.className="entry-image"; im.src=e.img; im.alt=(e.caption || `Entry ${idx+1}`);
+          im.className="entry-image"; im.src=e.img;
+          const altText = stripHtml(renderMarkdown((e.cap || "").trim())) || `Entry ${idx+1}`;
+          im.alt = altText;
           im.tabIndex = 0;
           im.addEventListener('click', ()=>openLightbox(im.src, im.alt));
           im.addEventListener('keydown', ev=>{ if(ev.key==='Enter' || ev.key===' ') openLightbox(im.src, im.alt); });
