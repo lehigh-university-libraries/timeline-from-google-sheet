@@ -66,34 +66,44 @@ const base=(s||"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g,"-"
 return base||fallback;
 }
 
-/* ===== Markdown (links + bold/italic + blockquotes + newlines) ===== */
-function escapeHTML(s){ return (s||"").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function renderMarkdown(text){
-if(!text) return "";
-const linkTokens=[]; let linkIdx=0;
-let tmp = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(m,label,url)=>{
-  const token=`__MDLINK_${linkIdx++}__`;
-  linkTokens.push({token, html:`<a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHTML(label)}</a>`});
-  return token;
-});
-tmp = escapeHTML(tmp)
-  .replace(/(https?:\/\/[^\s<)]+)([)\s.,;!?]*)/g,(m,url,trail)=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`)
-  .replace(/(^|[\s(])((?:www\.)[^\s<)]+)([)\s.,;!?]*)/g,(m,pre,url,trail)=>`${pre}<a href="https://${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`)
-  .replace(/(\*\*\*)([\s\S]+?)\1/g, '<strong><em>$2</em></strong>')
-  .replace(/(\*\*)([\s\S]+?)\1/g, '<strong>$2</strong>')
-  .replace(/(\*)([\s\S]+?)\1/g, '<em>$2</em>');
-{ // blockquotes grouped
-  const lines = tmp.split('\n'); const out = []; let buf = [];
-  const flush = () => { if (buf.length) { out.push('<blockquote>'+buf.join('<br>')+'</blockquote>'); buf=[]; } };
-  for (const raw of lines) {
-    const t = raw.replace(/^\s+/, '');
-    if (t.startsWith('&gt;')) buf.push(t.replace(/^&gt;\s?/, '')); else { flush(); out.push(raw); }
-  }
-  flush(); tmp = out.join('\n');
+/* ===== Markdown + HTML (links, bold/italic, blockquotes, newlines) ===== */
+function escapeHTML(s){
+  return (s||"").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
-tmp = tmp.replace(/\n/g,'<br>');
-for(const L of linkTokens) tmp = tmp.replaceAll(L.token, L.html);
-return tmp;
+
+function renderMarkdown(text){
+  if(!text) return "";
+
+  // Replace explicit Markdown links with tokens so embedded HTML survives
+  const linkTokens=[]; let linkIdx=0;
+  let tmp = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(m,label,url)=>{
+    const token=`__MDLINK_${linkIdx++}__`;
+    linkTokens.push({token, html:`<a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHTML(label)}</a>`});
+    return token;
+  });
+
+  // Auto-link bare URLs and process basic Markdown for bold/italic.
+  tmp = tmp
+    .replace(/(https?:\/\/[^\s<)]+)([)\s.,;!?]*)/g,(m,url,trail)=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`)
+    .replace(/(^|[\s(])((?:www\.)[^\s<)]+)([)\s.,;!?]*)/g,(m,pre,url,trail)=>`${pre}<a href="https://${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`)
+    .replace(/(\*\*\*)([\s\S]+?)\1/g, '<strong><em>$2</em></strong>')
+    .replace(/(\*\*)([\s\S]+?)\1/g, '<strong>$2</strong>')
+    .replace(/(\*)([\s\S]+?)\1/g, '<em>$2</em>');
+
+  // Group blockquotes; recognise lines starting with '>'
+  {
+    const lines = tmp.split('\n'); const out = []; let buf = [];
+    const flush = () => { if (buf.length) { out.push('<blockquote>'+buf.join('<br>')+'</blockquote>'); buf=[]; } };
+    for (const raw of lines) {
+      const t = raw.trimStart();
+      if (t.startsWith('>')) buf.push(t.replace(/^>\s?/, '')); else { flush(); out.push(raw); }
+    }
+    flush(); tmp = out.join('\n');
+  }
+
+  tmp = tmp.replace(/\n/g,'<br>');
+  for(const L of linkTokens) tmp = tmp.replaceAll(L.token, L.html);
+  return tmp;
 }
 
 function stripHtml(html){
@@ -259,7 +269,7 @@ sections.forEach(sec=>{
   if(sec.img){
     const img=document.createElement("img");
     img.className="section-image"; img.src=sec.img;
-    const altText = stripHtml(renderMarkdown((sec.cap || "").trim())) || sec.title;
+    const altText = stripHtml(DOMPurify.sanitize(renderMarkdown((sec.cap || "").trim()))) || sec.title;
     img.alt = altText;
     img.tabIndex = 0;
     img.addEventListener('click', ()=>openLightbox(img.src, img.alt));
@@ -307,7 +317,7 @@ sections.forEach(sec=>{
       if(e.img){
         const im = document.createElement("img");
         im.className="entry-image"; im.src=e.img;
-        const altText = stripHtml(renderMarkdown((e.cap || "").trim())) || `Entry ${idx+1}`;
+        const altText = stripHtml(DOMPurify.sanitize(renderMarkdown((e.cap || "").trim()))) || `Entry ${idx+1}`;
         im.alt = altText;
         im.tabIndex = 0;
         im.addEventListener('click', ()=>openLightbox(im.src, im.alt));
@@ -444,5 +454,5 @@ if(fileInput){
     rebuildAnchorTargets();
     document.getElementById("fallback").classList.remove("visible");
   });
-}
+ }
 })();
