@@ -48,6 +48,20 @@ class Sheet {
         }
         return out;
       },
+      getDisplayValues: () => {
+        const out = [];
+        for (let r = 0; r < rows; r++) {
+          const rowArr = [];
+          for (let c = 0; c < cols; c++) {
+            rowArr.push(self.data[row - 1 + r]?.[col - 1 + c]?.getText() || '');
+          }
+          out.push(rowArr);
+        }
+        return out;
+      },
+      getDisplayValue: () => {
+        return self.data[row - 1]?.[col - 1]?.getText() || '';
+      },
       setValues: vals => {
         for (let r = 0; r < rows; r++) {
           if (!self.data[row - 1 + r]) self.data[row - 1 + r] = [];
@@ -85,38 +99,35 @@ function createEnv(srcData) {
 
 test('syncExport rebuilds full sheet', () => {
   const sourceData = [
-    [makeRichText('Type'), makeRichText('Value')],
     [makeRichText('Bold', { bold: true }), makeRichText('Italic', { italic: true })],
   ];
   const { sandbox, exp } = createEnv(sourceData);
   sandbox.syncExport({ silent: true });
   assert.deepStrictEqual(exp.data, [
     ['Type', 'Value'],
-    ['**Bold**', '*Italic*'],
+    ['Bold', '*Italic*'],
   ]);
 });
 
 test('syncExport updates single row', () => {
   const sourceData = [
-    [makeRichText('Type'), makeRichText('Value')],
     [makeRichText('Bold', { bold: true }), makeRichText('Italic', { italic: true })],
   ];
   const { sandbox, src, exp } = createEnv(sourceData);
   sandbox.syncExport({ silent: true });
-  src.data[1] = [
+  src.data[0] = [
     makeRichText('Link', { link: 'https://x.test' }),
     makeRichText('BI', { bold: true, italic: true }),
   ];
-  sandbox.syncExport({ silent: true, row: 2 });
+  sandbox.syncExport({ silent: true, row: 1 });
   assert.deepStrictEqual(exp.data, [
     ['Type', 'Value'],
-    ['[Link](https://x.test)', '***BI***'],
+    ['Link', '***BI***'],
   ]);
 });
 
 test('syncExport normalizes first section rows', () => {
   const sourceData = [
-    [makeRichText('Type'), makeRichText('Value')],
     [makeRichText('Section Heading'), makeRichText('Head')],
     [makeRichText('Section Description'), makeRichText('Plain')],
     [makeRichText('Section Image'), makeRichText('img')],
@@ -136,7 +147,6 @@ test('syncExport normalizes first section rows', () => {
 
 test('syncExport inserts missing Section Image and drops duplicate descriptions', () => {
   const sourceData = [
-    [makeRichText('Type'), makeRichText('Value')],
     [makeRichText('Section Heading'), makeRichText('Head')],
     [makeRichText('Section Description'), makeRichText('One', { italic: true })],
     [makeRichText('Section Caption'), makeRichText('cap')],
@@ -155,7 +165,6 @@ test('syncExport inserts missing Section Image and drops duplicate descriptions'
 
 test('editing first-section row rebuilds section and inserts missing image', () => {
   const sourceData = [
-    [makeRichText('Type'), makeRichText('Value')],
     [makeRichText('Section Heading'), makeRichText('Head')],
     [makeRichText('Section Description'), makeRichText('One')],
     [makeRichText('Section Caption'), makeRichText('cap')],
@@ -164,8 +173,8 @@ test('editing first-section row rebuilds section and inserts missing image', () 
   const { sandbox, src, exp } = createEnv(sourceData);
   sandbox.syncExport({ silent: true });
   // Edit first Section Description row; export should still be normalized
-  src.data[2] = [makeRichText('Section Description'), makeRichText('Edited')];
-  sandbox.syncExport({ silent: true, row: 3 });
+  src.data[1] = [makeRichText('Section Description'), makeRichText('Edited')];
+  sandbox.syncExport({ silent: true, row: 2 });
   assert.deepStrictEqual(exp.data, [
     ['Type', 'Value'],
     ['Section Heading', 'Head'],
