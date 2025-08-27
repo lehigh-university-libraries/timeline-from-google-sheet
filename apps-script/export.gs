@@ -65,19 +65,19 @@ function syncExport(opts) {
   exp.clearContents();
   exp.getRange(1, 1, 1, 2).setValues([HEADER]);
 
-  if (last <= 1) {
+  if (last < 1) {
     exp.getRange('D1').setValue('Last sync: ' + new Date().toLocaleString());
     SpreadsheetApp.flush();
     if (!(opts && opts.silent)) toast('No data in "Source".');
     return;
   }
 
-  const height = last - 1;
-  const richRows = src.getRange(2, 1, height, 2).getRichTextValues();
+  const height = last;
+  const richRows = src.getRange(1, 1, height, 2).getRichTextValues();
 
   // Build normalized keys + resolved values
   const keys = richRows.map(r => norm(r[0].getText()));
-  const values = richRows.map((r, i) => resolveValue(r[0], r[1], i + 2, src));
+  const values = richRows.map((r, i) => resolveValue(r[0], r[1], i + 1, src));
 
   let data = [];
 
@@ -117,8 +117,8 @@ function syncExport(opts) {
 
 function firstSectionCount(src) {
   const last = src.getLastRow();
-  if (last <= 1) return 0;
-  const vals = src.getRange(2, 1, last - 1, 1).getDisplayValues().map(r => norm(r[0]));
+  if (last < 1) return 0;
+  const vals = src.getRange(1, 1, last, 1).getDisplayValues().map(r => norm(r[0]));
   if (!vals.length || vals[0] !== 'section heading') return 0;
   for (let i = 1; i < vals.length; i++) {
     if (vals[i] === 'section heading') return i; // number of rows before next heading
