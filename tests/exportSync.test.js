@@ -153,3 +153,25 @@ test('syncExport inserts missing Section Image and drops duplicate descriptions'
   ]);
 });
 
+test('editing first-section row rebuilds section and inserts missing image', () => {
+  const sourceData = [
+    [makeRichText('Type'), makeRichText('Value')],
+    [makeRichText('Section Heading'), makeRichText('Head')],
+    [makeRichText('Section Description'), makeRichText('One')],
+    [makeRichText('Section Caption'), makeRichText('cap')],
+    [makeRichText('Section Description'), makeRichText('Two', { bold: true })],
+  ];
+  const { sandbox, src, exp } = createEnv(sourceData);
+  sandbox.syncExport({ silent: true });
+  // Edit first Section Description row; export should still be normalized
+  src.data[2] = [makeRichText('Section Description'), makeRichText('Edited')];
+  sandbox.syncExport({ silent: true, row: 3 });
+  assert.deepStrictEqual(exp.data, [
+    ['Type', 'Value'],
+    ['Section Heading', 'Head'],
+    ['Section Image', ''],
+    ['Section Caption', 'cap'],
+    ['Section Description', '**Two**'],
+  ]);
+});
+

@@ -53,6 +53,12 @@ function syncExport(opts) {
   // Single-row update (onEdit)
   if (row) {
     if (row === 1) return; // skip header row
+    const norm = s => (s || '').trim().toLowerCase();
+    const key = norm(src.getRange(row, 1, 1, 1).getRichTextValues()[0][0].getText());
+    const firstSectionKeys = ['section heading', 'section image', 'section caption', 'section description'];
+    if (firstSectionKeys.includes(key)) {
+      return syncExport({ silent: opts && opts.silent });
+    }
     const rich = src.getRange(row, 1, 1, 2).getRichTextValues()[0];
     const values = [richTextToMarkdown(rich[0]), richTextToMarkdown(rich[1])];
     exp.getRange(row, 1, 1, 2).setValues([values]);
