@@ -49,13 +49,21 @@ function richTextToMarkdown(rich) {
 }
 
 function resolveValue(typeRich, valueRich, row, src) {
-  const key = norm(typeRich.getText());
-  if (key === 'section image') {
+  const key = norm(typeRich ? typeRich.getText() : '');
+  const isImageKey = /\bimage$/.test(key);
+  const isDateKey  = /\bdate$/.test(key);
+
+  if (isImageKey) {
     // Preserve visible URL or =IMAGE() result
     const d = src.getRange(row, 2).getDisplayValue();
-    return d !== '' ? d : valueRich.getText();
+    return d !== '' ? d : (valueRich ? valueRich.getText() : '');
+  } else if (isDateKey) {
+    // Dates are not rich text; always use rendered text
+    return src.getRange(row, 2).getDisplayValue();
+  } else {
+    const md = valueRich ? richTextToMarkdown(valueRich) : '';
+    return (md && md !== '') ? md : src.getRange(row, 2).getDisplayValue();
   }
-  return richTextToMarkdown(valueRich);
 }
 
 function syncExport(opts) {
