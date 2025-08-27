@@ -134,3 +134,22 @@ test('syncExport normalizes first section rows', () => {
   ]);
 });
 
+test('syncExport inserts missing Section Image and drops duplicate descriptions', () => {
+  const sourceData = [
+    [makeRichText('Type'), makeRichText('Value')],
+    [makeRichText('Section Heading'), makeRichText('Head')],
+    [makeRichText('Section Description'), makeRichText('One', { italic: true })],
+    [makeRichText('Section Caption'), makeRichText('cap')],
+    [makeRichText('Section Description'), makeRichText('Two', { bold: true })],
+  ];
+  const { sandbox, exp } = createEnv(sourceData);
+  sandbox.syncExport({ silent: true });
+  assert.deepStrictEqual(exp.data, [
+    ['Type', 'Value'],
+    ['Section Heading', 'Head'],
+    ['Section Image', ''],
+    ['Section Caption', 'cap'],
+    ['Section Description', '**Two**'],
+  ]);
+});
+

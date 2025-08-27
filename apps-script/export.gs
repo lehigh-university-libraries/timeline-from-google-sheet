@@ -74,31 +74,33 @@ function syncExport(opts) {
   }
 
   const richRows = src.getRange(2, 1, last - 1, 2).getRichTextValues();
+  const plainRows = richRows.map(r => [r[0].getText(), r[1].getText()]);
   let data = richRows.map(r => [richTextToMarkdown(r[0]), richTextToMarkdown(r[1])]);
 
-  // Normalize the very first section so it includes Heading → Image → Caption → Description
-  // and drop any duplicated plain-text "Section Description" rows.
-  if (data.length && data[0][0].toLowerCase() === 'section heading') {
-    const nextHeading = data.findIndex((r, i) => i > 0 && r[0].toLowerCase() === 'section heading');
-    const firstSectionEnd = nextHeading === -1 ? data.length : nextHeading;
-    const firstSection = data.slice(0, firstSectionEnd);
-    const rest = data.slice(firstSectionEnd);
+  // Normalize the very first section so it always has Heading → Image → Caption → Description
+  const norm = s => (s || '').trim().toLowerCase();
+  if (plainRows.length && norm(plainRows[0][0]) === 'section heading') {
+    const nextHeading = plainRows.findIndex((r, i) => i > 0 && norm(r[0]) === 'section heading');
+    const firstSectionEnd = nextHeading === -1 ? plainRows.length : nextHeading;
 
-    const parts = { heading: null, image: null, caption: null, description: null };
-    firstSection.forEach(r => {
-      const k = r[0].toLowerCase();
-      if (k === 'section heading') parts.heading = r;
-      else if (k === 'section image' && !parts.image) parts.image = r;
-      else if (k === 'section caption' && !parts.caption) parts.caption = r;
-      else if (k === 'section description') parts.description = r; // keep last seen
-    });
+    const parts = { heading: '', image: '', caption: '', description: '' };
+    for (let i = 0; i < firstSectionEnd; i++) {
+      const key = norm(plainRows[i][0]);
+      const val = data[i][1];
+      if (key === 'section heading') parts.heading = val;
+      else if (key === 'section image') parts.image = val;
+      else if (key === 'section caption') parts.caption = val;
+      else if (key === 'section description') parts.description = val; // last wins
+    }
 
-    const fixedFirst = [];
-    if (parts.heading) fixedFirst.push(parts.heading);
-    if (parts.image) fixedFirst.push(parts.image);
-    if (parts.caption) fixedFirst.push(parts.caption);
-    if (parts.description) fixedFirst.push(parts.description);
-    data = fixedFirst.concat(rest);
+    const fixedFirst = [
+      ['Section Heading', parts.heading],
+      ['Section Image', parts.image],
+      ['Section Caption', parts.caption],
+      ['Section Description', parts.description],
+    ];
+
+    data = fixedFirst.concat(data.slice(firstSectionEnd));
   }
   
   if (data.length) exp.getRange(2, 1, data.length, 2).setValues(data);
