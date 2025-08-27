@@ -50,12 +50,14 @@ function richTextToMarkdown(rich) {
 
 function resolveValue(typeRich, valueRich, row, src) {
   const key = norm(typeRich.getText());
-  if (key === 'section image') {
+  if (key.endsWith('image')) {
     // Preserve visible URL or =IMAGE() result
     const d = src.getRange(row, 2).getDisplayValue();
     return d !== '' ? d : valueRich.getText();
   }
-  return richTextToMarkdown(valueRich);
+  const md = valueRich ? richTextToMarkdown(valueRich) : '';
+  if (md) return md;
+  return src.getRange(row, 2).getDisplayValue();
 }
 
 function syncExport(opts) {
