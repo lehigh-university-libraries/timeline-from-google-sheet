@@ -100,7 +100,7 @@ function syncExport(opts) {
     if (parts.description) fixedFirst.push(parts.description);
     data = fixedFirst.concat(rest);
   }
-
+  
   if (data.length) exp.getRange(2, 1, data.length, 2).setValues(data);
   exp.getRange('D1').setValue('Last sync: ' + new Date().toLocaleString());
   SpreadsheetApp.flush();
