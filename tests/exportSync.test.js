@@ -114,3 +114,23 @@ test('syncExport updates single row', () => {
   ]);
 });
 
+test('syncExport normalizes first section rows', () => {
+  const sourceData = [
+    [makeRichText('Type'), makeRichText('Value')],
+    [makeRichText('Section Heading'), makeRichText('Head')],
+    [makeRichText('Section Description'), makeRichText('Plain')],
+    [makeRichText('Section Image'), makeRichText('img')],
+    [makeRichText('Section Caption'), makeRichText('cap')],
+    [makeRichText('Section Description'), makeRichText('MD', { bold: true })],
+  ];
+  const { sandbox, exp } = createEnv(sourceData);
+  sandbox.syncExport({ silent: true });
+  assert.deepStrictEqual(exp.data, [
+    ['Type', 'Value'],
+    ['Section Heading', 'Head'],
+    ['Section Image', 'img'],
+    ['Section Caption', 'cap'],
+    ['Section Description', '**MD**'],
+  ]);
+});
+
